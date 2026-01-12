@@ -1,0 +1,33 @@
+# Build directories
+cmake-build-debug/
+build/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+CTestTestfile.cmake
+cmake_install.cmake
+
+# Compiled binaries and object files
+*.o
+*.a
+*.so
+sfs
+sfs_*
+*.exe
+
+# Disk image
+*.sfs
+
+# Editor/IDE
+.idea/
+*.iml
+
+# Logs and temporary files
+*.log
+*~
+
+# OS files
+.DS_Store
+

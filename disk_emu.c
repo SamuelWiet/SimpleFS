@@ -96,7 +96,7 @@ int init_disk(char *filename, int block_size, int num_blocks)
 /*-------------------------------------------------------------------*/
 int read_blocks(int start_address, int nblocks, void *buffer)
 {
-    int i, j, e, s;
+    int i, e, s;
     e = 0;
     s = 0;
 
@@ -107,6 +107,7 @@ int read_blocks(int start_address, int nblocks, void *buffer)
     if (start_address + nblocks > MAX_BLOCK)
     {
         printf("out of bound error\n");
+        free(blockRead);
         return -1;
     }
 
@@ -120,12 +121,12 @@ int read_blocks(int start_address, int nblocks, void *buffer)
         usleep(L);
 
         s++;
-        fread(blockRead, BLOCK_SIZE, 1, fp);
+        /* read one block */
+        size_t got = fread(blockRead, BLOCK_SIZE, 1, fp);
+        (void)got; /* ignore value but avoid unused warning */
 
-        for (j = 0; j < BLOCK_SIZE; j++)
-        {
-            memcpy(buffer+(i*BLOCK_SIZE), blockRead, BLOCK_SIZE);  
-        }
+        /* copy blockRead into the destination buffer once per block */
+        memcpy((char*)buffer + (i * BLOCK_SIZE), blockRead, BLOCK_SIZE);
     }
 
     free(blockRead);
@@ -156,17 +157,17 @@ int write_blocks(int start_address, int nblocks, void *buffer)
         exit(0);
         return -1;
     }
-	
-    /*Goto where the data is to be written on the disk*/        
+
+    /*Goto where the data is to be written on the disk*/
     fseek(fp, start_address * BLOCK_SIZE, SEEK_SET);
-	
-    /*For every block requested*/        
+
+    /*For every block requested*/
     for (i = 0; i < nblocks; ++i)
     {
         /*Pause until the latency duration is elapsed*/
         usleep(L);
 
-        memcpy(blockWrite, buffer+(i*BLOCK_SIZE), BLOCK_SIZE);
+        memcpy(blockWrite, (char*)buffer + (i * BLOCK_SIZE), BLOCK_SIZE);
 
         fwrite(blockWrite, BLOCK_SIZE, 1, fp);
         fflush(fp);
@@ -180,3 +181,5 @@ int write_blocks(int start_address, int nblocks, void *buffer)
     else
         return e;
 }
+
+

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "sfs_api.h"
 
@@ -40,7 +41,9 @@
 
 char *rand_name() 
 {
-    char fname[MAX_FNAME_LENGTH];
+    /* Allocate one extra byte so we can always NUL-terminate safely. */
+    char *fname = malloc(MAX_FNAME_LENGTH + 1);
+    if (!fname) return NULL;
     int i;
 
     for (i = 0; i < MAX_FNAME_LENGTH; i++) {
@@ -51,8 +54,8 @@ char *rand_name()
             fname[i] = '.';
         }
     }
-    fname[i] = '\0';
-    return (strdup(fname));
+    fname[MAX_FNAME_LENGTH] = '\0';
+    return fname;
 }
 
 /* The main testing program
@@ -71,6 +74,9 @@ main(int argc, char **argv)
 //    int ncreate;                  /* Number of files created in directory */
     int error_count = 0;
     int tmp;
+
+    /* seed RNG once */
+    srand((unsigned int)time(NULL));
 
     mksfs(1);                     /* Initialize the file system. */
 
@@ -160,6 +166,11 @@ main(int argc, char **argv)
     }
 
     fprintf(stderr, "Test program exiting with %d errors\n", error_count);
+
+    for (i = 0; i < 5; i++) {
+        free(names[i]);
+        names[i] = NULL;
+    }
 
     /**for (i = 0; i < MAX_FILE; i++) {
         char * file = FileAllocationTable_getFullFile(root.table[i], fat);

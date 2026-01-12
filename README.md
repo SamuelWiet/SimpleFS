@@ -133,42 +133,59 @@ If you have some experience with **gdb**, you can also use the following command
 	./test.sh debug
 
 
-# Sample Output
+# Build & Test (development)
 
-	Compiling...
-	
-	Running...
-	Five files created with zero length:
+If you want to build from source, run the following commands from the repository root. These commands work with the project's CMake setup (the project currently targets CMake 3.28+).
 
+1) Configure & build with CMake (out-of-source build):
 
-	Error: File #3 does not exist.Error: File #4 does not exist.
-	 Fri Apr 19 23:08:32 2013	18KB	SYPJTVDN.RIC
-	 Fri Apr 19 23:08:32 2013	27KB	XQRCEOTI.EZO
-	 Fri Apr 19 23:08:32 2013	14KB	BUXKGVQA.VIK
-	 Fri Apr 19 23:08:32 2013	29KB	DPGWZIXX.AQB
-	 Fri Apr 19 23:08:32 2013	28KB	FUPJWDFZ.YDL
-	Reopened the files again.. the read/write pointers should be set to front
-	out of bound error
-	ERROR: data error at offset 0 in file SYPJTVDN.RIC (-1,0)
-	out of bound error
-	ERROR: data error at offset 1611 in file SYPJTVDN.RIC (-1,75)
-	out of bound error
-	ERROR: data error at offset 5513 in file SYPJTVDN.RIC (0,-119)
-	out of bound error
-	ERROR: data error at offset 15413 in file SYPJTVDN.RIC (120,53)
-	out of bound error
-	ERROR: data error at offset 17262 in file SYPJTVDN.RIC (-16,110)
-	out of bound error
-	ERROR: data error at offset 18420 in file SYPJTVDN.RIC (-16,-12)
-	out of bound error
-	ERROR: data error at offset 18896 in file SYPJTVDN.RIC (48,-48)
-	out of bound error
-	ERROR: data error at offset 18909 in file SYPJTVDN.RIC (112,-35)
-	out of bound error
-	ERROR: data error at offset 18917 in file SYPJTVDN.RIC (0,-27)
-	out of bound error
-	ERROR: data error at offset 0 in file XQRCEOTI.EZO (-40,0)
-	out of bound error
-	ERROR: data error at offset 8434 in file XQRCEOTI.EZO (0,-14)
-	./test.sh: line 15: 21451 Segmentation fault      ./$P
+```bash
+mkdir -p cmake-build-debug
+cmake -S . -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build cmake-build-debug -j
+```
 
+If you want test targets to be built with AddressSanitizer (ASan), enable the option when configuring CMake:
+
+```bash
+# Configure and enable ASan for the test targets
+cmake -S . -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
+cmake --build cmake-build-debug -j
+```
+
+2) Run unit tests with CTest (runs the `sfs_unittests_*` test binaries):
+
+```bash
+ctest --test-dir cmake-build-debug --output-on-failure -j
+```
+
+3) Quick AddressSanitizer run (compile a single ASan binary and run it):
+
+```bash
+# build an instrumented binary
+gcc -g -O0 -fsanitize=address,undefined sfs_test.c disk_emu.c sfs_api.c sfs_util.c -o sfs_asan
+# run it (capture full ASan output to a log)
+ASAN_OPTIONS=verbosity=1:halt_on_error=1 ./sfs_asan 2>&1 | tee /tmp/sfs_asan.log
+```
+
+Notes:
+- The repository `CMakeLists.txt` was adjusted to support CMake 3.28 so you can build with many common distributions. If you prefer to require CMake 4.1, change the top line of `CMakeLists.txt` back to `cmake_minimum_required(VERSION 4.1)` and install a newer CMake on your system.
+- To upgrade CMake on Debian/Ubuntu systems, the Kitware apt repository is recommended. Example (replace `focal` with your distro codename):
+
+```bash
+sudo apt remove --purge cmake
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates gnupg software-properties-common wget
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc | sudo apt-key add -
+sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ focal main'
+sudo apt update
+sudo apt install cmake
+cmake --version
+```
+
+- To run the test binary directly (without ctest):
+
+```bash
+./cmake-build-debug/sfs_unittests_utils
+./cmake-build-debug/sfs_unittests_api
+```
